@@ -20,6 +20,16 @@ class Usuario extends Authenticatable
         'provider',
         'provider_id',
         'password',
+
+        /////
+
+        'biografia',
+        'fecha_nacimiento',
+        'ubicacion',
+        'foto_perfil',
+        'foto_portada',
+        'perfil_completado',
+        'estado',
     ];
 
     protected $hidden = [
@@ -38,4 +48,9 @@ class Usuario extends Authenticatable
     {
         return $this->hasOne(Profile::class, 'usuario_id');
     }*/
+
+    public function formacionAcademica()
+    {
+        return $this->hasMany(FormacionAcademica::class, 'usuario_id');
+    }
 }

@@ -12,32 +12,33 @@ class ProfileController extends Controller
     {
         try {
             $usuario = $request->user();
-
-            $datos = [];
+$datos = [];
 
             if ($request->filled('biografia'))
                 $datos['biografia'] = $request->biografia;
 
-            if ($request->filled('universidad'))
-                $datos['universidad'] = $request->universidad;
-
-            if ($request->filled('carrera'))
-                $datos['carrera'] = $request->carrera;
-
             if ($request->filled('ubicacion'))
                 $datos['ubicacion'] = $request->ubicacion;
+
+            // foto perfil
+
 
             if ($request->hasFile('foto_perfil')) {
                 $path = $request->file('foto_perfil')->store('fotos_perfil', 'public');
                 $datos['foto_perfil'] = $path;
             }
 
-            $datos['perfil_completado'] = true;
+            $datos['perfil_completado'] = 1;
+
 
             Profile::updateOrCreate(
                 ['usuario_id' => $usuario->id],
                 $datos
             );
+
+            // guarda en usuarios
+            $usuario->update($datos);
+
 
             return response()->json([
                 'message' => 'Perfil completado correctamente',
