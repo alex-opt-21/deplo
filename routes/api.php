@@ -12,6 +12,8 @@ Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword
 // Agrupamos todo lo que requiere estar logueado
 Route::middleware('auth:sanctum')->group(function () {
 
+    
+
     // Obtener datos del perfil (GET)
     Route::get('/perfil/me', [ProfileController::class, 'show']);
 

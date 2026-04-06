@@ -2,88 +2,61 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Profile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 
 class ProfileController extends Controller
 {
-
-    /* public function storeOrUpdate(Request $request)
-    {
-        try {
-            $usuario = $request->user();
-
-            $datos = $request->only([
-                'nombre',
-                'apellido',
-                'profesion',
-                'universidad',
-                'ubicacion',
-                'fecha_nacimiento'
-            ]);
-
-            if ($request->hasFile('foto_perfil')) {
-                $datos['foto_perfil'] = $request->file('foto_perfil')->store('fotos_perfil', 'public');
-            }
-
-            // Usamos Profile y la llave que ellos definieron (probablemente usuario_id)
-            $perfil = Profile::updateOrCreate(
-                ['usuario_id' => $usuario->id],
-                $datos
-            );
-
-            return response()->json([
-                'status' => 'success',
-                'data' => $perfil
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
-    }
- */
-
     public function storeOrUpdate(Request $request)
 {
     try {
         $usuario = $request->user();
 
-        // Actualizar nombre y apellido en tabla 'usuarios'
+        // Todo va directo a tabla 'usuarios'
         $datosUsuario = [];
+
         if ($request->filled('nombre'))
             $datosUsuario['nombre'] = $request->nombre;
         if ($request->filled('apellido'))
             $datosUsuario['apellido'] = $request->apellido;
+        if ($request->filled('biografia'))
+            $datosUsuario['biografia'] = $request->biografia;
+        if ($request->filled('ubicacion'))
+            $datosUsuario['ubicacion'] = $request->ubicacion;
+        if ($request->filled('fecha_nacimiento'))
+            $datosUsuario['fecha_nacimiento'] = $request->fecha_nacimiento;
+
+        if ($request->hasFile('foto_perfil')) {
+            $datosUsuario['foto_perfil'] = $request->file('foto_perfil')
+                ->store('fotos_perfil', 'public');
+        }
+        if ($request->hasFile('foto_portada')) {
+            $datosUsuario['foto_portada'] = $request->file('foto_portada')
+                ->store('fotos_portada', 'public');
+        }
 
         if (!empty($datosUsuario)) {
             $usuario->update($datosUsuario);
         }
 
-        // Actualizar campos de perfil en tabla 'profile'
-        $datosPerfil = [];
-        if ($request->filled('biografia'))
-            $datosPerfil['biografia'] = $request->biografia;
-        if ($request->filled('universidad'))
-            $datosPerfil['universidad'] = $request->universidad;
-        if ($request->filled('carrera'))
-            $datosPerfil['carrera'] = $request->carrera;
-        if ($request->filled('ubicacion'))
-            $datosPerfil['ubicacion'] = $request->ubicacion;
-
-        if ($request->hasFile('foto_perfil')) {
-            $datosPerfil['foto_perfil'] = $request->file('foto_perfil')
-                ->store('fotos_perfil', 'public');
+        // Redes sociales van a tabla 'social'
+        foreach (['github', 'linkedin'] as $red) {
+            if ($request->filled($red)) {
+                \App\Models\Social::updateOrCreate(
+                    [
+                        'usuario_id'        => $usuario->id,
+                        'nombre_plataforma' => $red,
+                    ],
+                    ['url_plataforma' => $request->$red]
+                );
+            }
         }
 
-        $perfil = Profile::updateOrCreate(
-            ['usuario_id' => $usuario->id],
-            $datosPerfil
-        );
-
         return response()->json([
-            'status' => 'success',
-            'data'   => array_merge($datosUsuario, $datosPerfil)
+            'status'  => 'success',
+            'message' => 'Perfil actualizado correctamente',
+            'data'    => $usuario->fresh(),
         ]);
 
     } catch (\Exception $e) {
@@ -93,76 +66,48 @@ class ProfileController extends Controller
         ], 500);
     }
 }
-
-    /* public function show(Request $request)
-    {
-        // Usamos el ID del usuario que viene en el Token
-        $perfil = \App\Models\Profile::where('usuario_id', $request->user()->id)->first();
-
-        // Si no existe, devolvemos un objeto vacío para que React no explote
-        if (!$perfil) {
-            return response()->json([
-                'nombre' => '',
-                'apellido' => '',
-                'fecha_nacimiento' => '',
-                'universidad' => '',
-                'profesion' => ''
-            ]);
-        }
-
-        return response()->json($perfil);
-    } */
-
     public function show(Request $request)
 {
     $usuario = $request->user();
-    $perfil = Profile::where('usuario_id', $usuario->id)->first();
+
+    // Traer redes sociales
+    $github   = \App\Models\Social::where('usuario_id', $usuario->id)
+                    ->where('nombre_plataforma', 'github')
+                    ->first();
+    $linkedin = \App\Models\Social::where('usuario_id', $usuario->id)
+                    ->where('nombre_plataforma', 'linkedin')
+                    ->first();
 
     return response()->json([
-        'nombre'    => $usuario->nombre,
-        'apellido'  => $usuario->apellido,
-        'email'     => $usuario->email,
-        'biografia' => $perfil->biografia ?? '',
-        'universidad' => $perfil->universidad ?? '',
-        'carrera'   => $perfil->carrera ?? '',
-        'ubicacion' => $perfil->ubicacion ?? '',
-        'foto_perfil' => $perfil->foto_perfil ?? '',
-        'perfil_completado' => $perfil->perfil_completado ?? 0,
+        'nombre'             => $usuario->nombre          ?? '',
+        'apellido'           => $usuario->apellido        ?? '',
+        'email'              => $usuario->email           ?? '',
+        'biografia'          => $usuario->biografia       ?? '',
+        'ubicacion'          => $usuario->ubicacion       ?? '',
+        'fecha_nacimiento'   => $usuario->fecha_nacimiento ?? '',
+        'foto_perfil'        => $usuario->foto_perfil     ?? '',
+        'foto_portada'       => $usuario->foto_portada    ?? '',
+        'perfil_completado'  => $usuario->perfil_completado ?? 0,
+        'github'             => $github?->url_plataforma  ?? '',
+        'linkedin'           => $linkedin?->url_plataforma ?? '',
     ]);
 }
-
     public function completar(Request $request)
     {
         try {
             $usuario = $request->user();
 
-            $datos = [];
+            $datos = $request->only(['biografia', 'ubicacion']);
 
-            if ($request->filled('biografia'))
-                $datos['biografia'] = $request->biografia;
-
-            if ($request->filled('universidad'))
-                $datos['universidad'] = $request->universidad;
-
-            if ($request->filled('carrera'))
-                $datos['carrera'] = $request->carrera;
-
-            if ($request->filled('ubicacion'))
-                $datos['ubicacion'] = $request->ubicacion;
-
-            // Manejo de foto
             if ($request->hasFile('foto_perfil')) {
-                $path = $request->file('foto_perfil')->store('fotos_perfil', 'public');
-                $datos['foto_perfil'] = $path;
+                $datos['foto_perfil'] = $request->file('foto_perfil')->store('fotos_perfil', 'public');
             }
 
             $datos['perfil_completado'] = true;
+            $datos['estado'] = 'activo'; // Campo nuevo en tu BD
 
-            // Crea o actualiza el perfil
-            Profile::updateOrCreate(
-                ['usuario_id' => $usuario->id],
-                $datos
-            );
+            // Guardar directamente en la tabla 'usuarios'
+            $usuario->update($datos);
 
             return response()->json([
                 'message' => 'Perfil completado correctamente',
@@ -174,43 +119,66 @@ class ProfileController extends Controller
         }
     }
     public function crearPerfilProfesional(Request $request)
-    {
-        try {
-            $usuario = $request->user();
+{
+    try {
+        $usuario = $request->user();
 
-            $profile = Profile::where('usuario_id', $usuario->id)->first();
-
-            if (!$profile) {
-                return response()->json([
-                    'message' => 'Primero debe completar su perfil básico'
-                ], 400);
-            }
-
-            $datos = [];
-
-            if ($request->filled('titulo'))
-                $datos['titulo'] = $request->titulo;
-
-            if ($request->filled('skills'))
-                $datos['skills'] = $request->skills;
-
-            if ($request->filled('github'))
-                $datos['github'] = $request->github;
-
-            if ($request->filled('linkedin'))
-                $datos['linkedin'] = $request->linkedin;
-
-            $profile->update($datos);
-
+        // Verificar que el perfil básico esté completo
+        if (!$usuario->perfil_completado) {
             return response()->json([
-                'message' => 'Perfil profesional actualizado correctamente',
-                'profile' => $profile
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-            ], 500);
+                'message' => 'Primero debe completar su perfil básico'
+            ], 400);
         }
+
+        // Actualizar campos de perfil en tabla 'usuarios'
+        $datosUsuario = [];
+
+        if ($request->filled('biografia'))
+            $datosUsuario['biografia'] = $request->biografia;
+
+        if ($request->filled('ubicacion'))
+            $datosUsuario['ubicacion'] = $request->ubicacion;
+
+        if ($request->filled('fecha_nacimiento'))
+            $datosUsuario['fecha_nacimiento'] = $request->fecha_nacimiento;
+
+        if ($request->hasFile('foto_perfil')) {
+            $datosUsuario['foto_perfil'] = $request->file('foto_perfil')
+                ->store('fotos_perfil', 'public');
+        }
+
+        if (!empty($datosUsuario)) {
+            $usuario->update($datosUsuario);
+        }
+
+        // Guardar redes sociales en tabla 'social'
+        $redes = [
+            'github'   => $request->github,
+            'linkedin' => $request->linkedin,
+        ];
+
+        foreach ($redes as $plataforma => $url) {
+            if (!empty($url)) {
+                \App\Models\Social::updateOrCreate(
+                    [
+                        'usuario_id'        => $usuario->id,
+                        'nombre_plataforma' => $plataforma,
+                    ],
+                    ['url_plataforma' => $url]
+                );
+            }
+        }
+
+        return response()->json([
+            'message' => 'Perfil profesional actualizado correctamente',
+            'usuario' => $usuario->fresh(),
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => $e->getMessage(),
+        ], 500);
     }
+}
 
 }
