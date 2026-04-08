@@ -10,4 +10,9 @@ class Experience extends Model
         'title', 'descripcion',
         'fecha_inicio', 'fecha_fin',
     ];
+
+    public function usuario()
+    {
+        return $this->belongsTo(Usuario::class, 'usuario_id');
+    }
 }

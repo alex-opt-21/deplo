@@ -6,6 +6,7 @@ use App\Models\Profile;
 use App\Models\Usuario;
 use Illuminate\Http\Request;
 use App\Models\Proyecto;
+use App\Models\FormacionAcademica;
 
 class ProfileController extends Controller
 {
@@ -275,6 +276,12 @@ class ProfileController extends Controller
 
                 case 'habilidad':
                     return $this->searchUsuariosPorHabilidad($query, $filter);
+
+                case 'experiencia':
+                    return $this->searchUsuariosPorExperiencia($query, $filter);
+
+                case 'profesional':
+                    return $this->searchUsuariosPorFormacion($query, $filter);
                 default:
                     return response()->json([]);
             }
@@ -286,43 +293,85 @@ class ProfileController extends Controller
         }
     }
 
-    private function searchUsuariosPorHabilidad($query, $filter)
+    private function searchUsuariosPorExperiencia($query, $filter)
     {
-        // 1. Buscar en tabla habilidades
-        $habilidadesQuery = \App\Models\Habilidad::query();
+        $experienceQuery = \App\Models\Experience::query();
 
         switch ($filter) {
 
-            // 🔹 Buscar por nombre (cualquier tipo)
-            case 'nombre':
-                $habilidadesQuery->where('nombre', 'LIKE', "%{$query}%");
+            case 'empresa':
+                $experienceQuery->where('company', 'LIKE', "%{$query}%");
                 break;
 
-            // 🔹 Solo técnicas
-            case 'tecnica':
-                $habilidadesQuery->where('tipo', 'tecnica')
-                    ->where('nombre', 'LIKE', "%{$query}%");
+            case 'laboral':
+                $experienceQuery->where('tipo', 'laboral')
+                    ->where(function ($q) use ($query) {
+                        $q->where('title', 'LIKE', "%{$query}%")
+                            ->orWhere('descripcion', 'LIKE', "%{$query}%");
+                    });
                 break;
 
-            // 🔹 Solo blandas
-            case 'blanda':
-                $habilidadesQuery->where('tipo', 'blanda')
-                    ->where('nombre', 'LIKE', "%{$query}%");
+            case 'academica':
+                $experienceQuery->where('tipo', 'academica')
+                    ->where(function ($q) use ($query) {
+                        $q->where('title', 'LIKE', "%{$query}%")
+                            ->orWhere('descripcion', 'LIKE', "%{$query}%");
+                    });
                 break;
         }
 
-        // 2. Obtener IDs de usuarios SIN duplicados
-        $usuarioIds = $habilidadesQuery
+        $usuarioIds = $experienceQuery
             ->pluck('usuario_id')
             ->unique();
 
-        // 3. Buscar usuarios
         $usuarios = Usuario::whereIn('id', $usuarioIds)
             ->with('habilidades')
             ->limit(20)
             ->get();
 
-        // 4. Formato estándar (MUY IMPORTANTE)
+        return response()->json(
+            $usuarios->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->nombre,
+                    'lastName' => $user->apellido,
+                    'photo' => $user->foto_perfil,
+                    'bio' => $user->biografia,
+                    'skills' => $user->habilidades->pluck('nombre')->values(),
+                ];
+            })
+        );
+    }
+
+    private function searchUsuariosPorHabilidad($query, $filter)
+    {
+        $habilidadesQuery = \App\Models\Habilidad::query();
+
+        switch ($filter) {
+
+            case 'nombre':
+                $habilidadesQuery->where('nombre', 'LIKE', "%{$query}%");
+                break;
+
+            case 'tecnica':
+                $habilidadesQuery->where('tipo', 'tecnica')
+                    ->where('nombre', 'LIKE', "%{$query}%");
+                break;
+
+            case 'blanda':
+                $habilidadesQuery->where('tipo', 'blanda')
+                    ->where('nombre', 'LIKE', "%{$query}%");
+                break;
+        }
+        $usuarioIds = $habilidadesQuery
+            ->pluck('usuario_id')
+            ->unique();
+
+        $usuarios = Usuario::whereIn('id', $usuarioIds)
+            ->with('habilidades')
+            ->limit(20)
+            ->get();
+
         return response()->json(
             $usuarios->map(function ($user) {
                 return [
@@ -343,7 +392,6 @@ class ProfileController extends Controller
 
         switch ($filter) {
 
-            // 🔹 Nombre y apellido
             case 'nombre':
                 $words = preg_split('/\s+/', trim($query));
 
@@ -363,12 +411,10 @@ class ProfileController extends Controller
                 }
                 break;
 
-            // 🔹 Biografía
             case 'bio':
                 $usuariosQuery->where('biografia', 'LIKE', "%{$query}%");
                 break;
 
-            // 🔹 Ubicación
             case 'ubicacion':
                 $usuariosQuery->where('ubicacion', 'LIKE', "%{$query}%");
                 break;
@@ -393,14 +439,55 @@ class ProfileController extends Controller
         );
     }
 
+    private function searchUsuariosPorFormacion($query, $filter)
+    {
+        $formacionQuery = FormacionAcademica::query();
+
+        switch ($filter) {
+
+            case 'universidad':
+                $formacionQuery->where('institucion', 'LIKE', "%{$query}%");
+                break;
+
+            case 'carrera':
+                $formacionQuery->where('nombre_carrera', 'LIKE', "%{$query}%");
+                break;
+
+            case 'nivel':
+                $formacionQuery->where('tipo_formacion', 'LIKE', "%{$query}%");
+                break;
+        }
+
+        $usuarioIds = $formacionQuery
+            ->pluck('usuario_id')
+            ->unique();
+
+        $usuarios = Usuario::whereIn('id', $usuarioIds)
+            ->with('habilidades')
+            ->limit(20)
+            ->get();
+
+        return response()->json(
+            $usuarios->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->nombre,
+                    'lastName' => $user->apellido,
+                    'photo' => $user->foto_perfil,
+                    'bio' => $user->biografia,
+                    'skills' => $user->habilidades->pluck('nombre')->values(),
+                ];
+            })
+        );
+    }
+
     private function searchUsuariosPorProyecto($query, $filter)
     {
-        // 1. Buscar proyectos
         $proyectosQuery = Proyecto::query();
 
         switch ($filter) {
 
-            case 'nombre': // título del proyecto
+            case 'nombre':
                 $proyectosQuery->where('titulo', 'LIKE', "%{$query}%");
                 break;
 
@@ -413,18 +500,15 @@ class ProfileController extends Controller
                 break;
         }
 
-        // 2. Obtener IDs de usuarios SIN duplicados
         $usuarioIds = $proyectosQuery
             ->pluck('usuario_id')
             ->unique();
 
-        // 3. Buscar usuarios con esos IDs
         $usuarios = Usuario::whereIn('id', $usuarioIds)
             ->with('habilidades')
             ->limit(20)
             ->get();
 
-        // 4. Formato igual que SIEMPRE (IMPORTANTE)
         return response()->json(
             $usuarios->map(function ($user) {
                 return [
