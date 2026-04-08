@@ -10,6 +10,31 @@ use App\Models\FormacionAcademica;
 
 class ProfileController extends Controller
 {
+    private function buildPublicStorageUrl(?string $path): string
+    {
+        if (!$path) {
+            return '';
+        }
+
+        if (preg_match('/^https?:\/\//i', $path)) {
+            return $path;
+        }
+
+        return rtrim(request()->getSchemeAndHttpHost(), '/') . '/storage/' . ltrim($path, '/');
+    }
+
+    private function formatSearchUser(Usuario $user): array
+    {
+        return [
+            'id' => $user->id,
+            'name' => $user->nombre,
+            'lastName' => $user->apellido,
+            'photo' => $this->buildPublicStorageUrl($user->foto_perfil),
+            'bio' => $user->biografia,
+            'skills' => $user->habilidades->pluck('nombre')->values(),
+        ];
+    }
+
     public function storeOrUpdate(Request $request)
     {
         try {
@@ -86,8 +111,8 @@ class ProfileController extends Controller
             'biografia'          => $usuario->biografia       ?? '',
             'ubicacion'          => $usuario->ubicacion       ?? '',
             'fecha_nacimiento'   => $usuario->fecha_nacimiento ?? '',
-            'foto_perfil'        => $usuario->foto_perfil     ?? '',
-            'foto_portada'       => $usuario->foto_portada    ?? '',
+            'foto_perfil'        => $this->buildPublicStorageUrl($usuario->foto_perfil),
+            'foto_portada'       => $this->buildPublicStorageUrl($usuario->foto_portada),
             'perfil_completado'  => $usuario->perfil_completado ?? 0,
             'github'             => $github?->url_plataforma  ?? '',
             'linkedin'           => $linkedin?->url_plataforma ?? '',
@@ -235,16 +260,7 @@ class ProfileController extends Controller
                 ->get();
 
             // 🔹 Formato para frontend
-            $result = $users->map(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->nombre,
-                    'lastName' => $user->apellido,
-                    'photo' => $user->foto_perfil,
-                    'bio' => $user->biografia,
-                    'skills' => $user->habilidades->pluck('nombre')->values(),
-                ];
-            });
+            $result = $users->map(fn($user) => $this->formatSearchUser($user));
 
             return response()->json($result);
         } catch (\Exception $e) {
@@ -330,16 +346,7 @@ class ProfileController extends Controller
             ->get();
 
         return response()->json(
-            $usuarios->map(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->nombre,
-                    'lastName' => $user->apellido,
-                    'photo' => $user->foto_perfil,
-                    'bio' => $user->biografia,
-                    'skills' => $user->habilidades->pluck('nombre')->values(),
-                ];
-            })
+            $usuarios->map(fn($user) => $this->formatSearchUser($user))
         );
     }
 
@@ -373,16 +380,7 @@ class ProfileController extends Controller
             ->get();
 
         return response()->json(
-            $usuarios->map(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->nombre,
-                    'lastName' => $user->apellido,
-                    'photo' => $user->foto_perfil,
-                    'bio' => $user->biografia,
-                    'skills' => $user->habilidades->pluck('nombre')->values(),
-                ];
-            })
+            $usuarios->map(fn($user) => $this->formatSearchUser($user))
         );
     }
 
@@ -426,16 +424,7 @@ class ProfileController extends Controller
             ->get();
 
         return response()->json(
-            $usuarios->map(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->nombre,
-                    'lastName' => $user->apellido,
-                    'photo' => $user->foto_perfil,
-                    'bio' => $user->biografia,
-                    'skills' => $user->habilidades->pluck('nombre')->values(),
-                ];
-            })
+            $usuarios->map(fn($user) => $this->formatSearchUser($user))
         );
     }
 
@@ -468,16 +457,7 @@ class ProfileController extends Controller
             ->get();
 
         return response()->json(
-            $usuarios->map(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->nombre,
-                    'lastName' => $user->apellido,
-                    'photo' => $user->foto_perfil,
-                    'bio' => $user->biografia,
-                    'skills' => $user->habilidades->pluck('nombre')->values(),
-                ];
-            })
+            $usuarios->map(fn($user) => $this->formatSearchUser($user))
         );
     }
 
@@ -510,16 +490,7 @@ class ProfileController extends Controller
             ->get();
 
         return response()->json(
-            $usuarios->map(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->nombre,
-                    'lastName' => $user->apellido,
-                    'photo' => $user->foto_perfil,
-                    'bio' => $user->biografia,
-                    'skills' => $user->habilidades->pluck('nombre')->values(),
-                ];
-            })
+            $usuarios->map(fn($user) => $this->formatSearchUser($user))
         );
     }
 }
