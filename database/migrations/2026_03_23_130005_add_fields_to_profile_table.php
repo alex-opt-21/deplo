@@ -11,16 +11,25 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('profile')) {
+            return;
+        }
+
         Schema::table('profile', function (Blueprint $table) {
-
-    // NUEVOS CAMPOS PARA HU4
-    $table->string('titulo')->nullable()->after('usuario_id');
-    $table->text('skills')->nullable()->after('biografia');
-
-    $table->string('github')->nullable()->after('skills');
-    $table->string('linkedin')->nullable()->after('github');
-
-});
+            // NUEVOS CAMPOS PARA HU4
+            if (!Schema::hasColumn('profile', 'titulo')) {
+                $table->string('titulo')->nullable()->after('usuario_id');
+            }
+            if (!Schema::hasColumn('profile', 'skills')) {
+                $table->text('skills')->nullable()->after('biografia');
+            }
+            if (!Schema::hasColumn('profile', 'github')) {
+                $table->string('github')->nullable()->after('skills');
+            }
+            if (!Schema::hasColumn('profile', 'linkedin')) {
+                $table->string('linkedin')->nullable()->after('github');
+            }
+        });
     }
 
     /**
@@ -28,13 +37,18 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('profile')) {
+            return;
+        }
+
         Schema::table('profile', function (Blueprint $table) {
-    $table->dropColumn([
-        'titulo',
-        'skills',
-        'github',
-        'linkedin'
-    ]);
-});
+            $columns = ['titulo', 'skills', 'github', 'linkedin'];
+
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('profile', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
+        });
     }
 };
