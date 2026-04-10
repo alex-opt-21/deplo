@@ -2,31 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\FormacionAcademicaRequest;
 use App\Models\FormacionAcademica;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class FormacionAcademicaController extends Controller
 {
-    // Guardar nueva formación
-    public function store(Request $request)
+    public function store(FormacionAcademicaRequest $request): JsonResponse
     {
         try {
-            $usuario = $request->user();
-
             $formacion = FormacionAcademica::create([
-                'usuario_id'      => $usuario->id,
-                'tipo_formacion'  => $request->tipo_formacion,
-                'institucion'     => $request->institucion,
-                'nombre_carrera' => $request->nombre_carrera,
-                'fecha_inicio'    => $request->fecha_inicio,
-                'fecha_fin'       => $request->fecha_fin,
+                ...$request->validated(),
+                'usuario_id' => $request->user()->id,
             ]);
 
             return response()->json([
-                'message'   => 'Formación académica guardada correctamente',
+                'message' => 'Formacion academica guardada correctamente',
                 'formacion' => $formacion,
             ], 201);
-
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
@@ -34,18 +28,17 @@ class FormacionAcademicaController extends Controller
         }
     }
 
-    // Obtener todas las formaciones del usuario
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         try {
-            $usuario = $request->user();
-
-            $formaciones = FormacionAcademica::where('usuario_id', $usuario->id)->get();
+            $formaciones = FormacionAcademica::forUser($request->user()->id)
+                ->orderByDesc('fecha_inicio')
+                ->orderByDesc('id')
+                ->get();
 
             return response()->json([
                 'formaciones' => $formaciones,
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
@@ -53,6 +46,3 @@ class FormacionAcademicaController extends Controller
         }
     }
 }
-
-
-

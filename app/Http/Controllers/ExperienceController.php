@@ -11,7 +11,7 @@ class ExperienceController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $items = Experience::where('usuario_id', $request->user()->id)
+        $items = Experience::forUser($request->user()->id)
             ->orderByDesc('fecha_inicio')
             ->orderByDesc('id')
             ->get();
@@ -34,7 +34,7 @@ class ExperienceController extends Controller
 
     public function update(ExperienceRequest $request, int $id): JsonResponse
     {
-        $experience = Experience::where('usuario_id', $request->user()->id)->findOrFail($id);
+        $experience = Experience::forUser($request->user()->id)->findOrFail($id);
         $data = $request->validated();
         $data['tipo'] = ($data['tipo'] ?? null) === 'trabajo' ? 'laboral' : ($data['tipo'] ?? null);
         $experience->update($data);
@@ -44,7 +44,7 @@ class ExperienceController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $experience = Experience::where('usuario_id', $request->user()->id)->findOrFail($id);
+        $experience = Experience::forUser($request->user()->id)->findOrFail($id);
         $experience->delete();
 
         return response()->json(['message' => 'Experiencia eliminada correctamente']);

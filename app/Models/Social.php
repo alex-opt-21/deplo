@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Social extends Model
@@ -16,6 +17,11 @@ class Social extends Model
         'nombre_plataforma',
         'url_plataforma',
     ];
+
+    public function scopeForUser(Builder $query, int $userId): Builder
+    {
+        return $query->where('usuario_id', $userId);
+    }
 
     public function usuario()
     {

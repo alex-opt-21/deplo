@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class Usuario extends Authenticatable
 {
@@ -34,26 +34,31 @@ class Usuario extends Authenticatable
         'password',
     ];
 
+    protected $casts = [
+        'fecha_nacimiento' => 'date',
+        'perfil_completado' => 'boolean',
+    ];
+
     public $timestamps = true;
 
     public function habilidades()
     {
-        return $this->hasMany(\App\Models\Habilidad::class, 'usuario_id');
+        return $this->hasMany(Habilidad::class, 'usuario_id');
     }
 
     public function experiences()
     {
-        return $this->hasMany(\App\Models\Experience::class, 'usuario_id');
+        return $this->hasMany(Experience::class, 'usuario_id');
     }
 
     public function proyectos()
     {
-        return $this->hasMany(\App\Models\Proyecto::class, 'usuario_id');
+        return $this->hasMany(Proyecto::class, 'usuario_id');
     }
 
     public function sociales()
     {
-        return $this->hasMany(\App\Models\Social::class, 'usuario_id');
+        return $this->hasMany(Social::class, 'usuario_id');
     }
 
     public function formacionAcademica()

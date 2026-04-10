@@ -11,7 +11,7 @@ class ProjectController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $projects = Proyecto::where('usuario_id', $request->user()->id)
+        $projects = Proyecto::forUser($request->user()->id)
             ->orderByDesc('id')
             ->get();
 
@@ -34,7 +34,7 @@ class ProjectController extends Controller
 
     public function update(ProjectRequest $request, int $id): JsonResponse
     {
-        $project = Proyecto::where('usuario_id', $request->user()->id)->findOrFail($id);
+        $project = Proyecto::forUser($request->user()->id)->findOrFail($id);
         $data = $request->validated();
 
         $imagePath = $this->storeImage($request);
@@ -49,7 +49,7 @@ class ProjectController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $project = Proyecto::where('usuario_id', $request->user()->id)->findOrFail($id);
+        $project = Proyecto::forUser($request->user()->id)->findOrFail($id);
         $project->delete();
 
         return response()->json(['message' => 'Proyecto eliminado correctamente']);

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Proyecto extends Model
@@ -18,11 +19,14 @@ class Proyecto extends Model
         'imagen',
         'estado',
     ];
-    // 🔹 Relación: un proyecto pertenece a un usuario
+
+    public function scopeForUser(Builder $query, int $userId): Builder
+    {
+        return $query->where('usuario_id', $userId);
+    }
 
     public function usuario()
     {
         return $this->belongsTo(Usuario::class, 'usuario_id');
     }
 }
-

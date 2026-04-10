@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\OAuthUserService;
 use Laravel\Socialite\Facades\Socialite;
-use App\Models\Usuario;
-use Illuminate\Support\Str;
 
 class GitHubController extends Controller
 {
+    public function __construct(private readonly OAuthUserService $oAuthUserService) {}
+
     public function redirect()
     {
         return Socialite::driver('github')->redirect();
@@ -19,27 +20,19 @@ class GitHubController extends Controller
         try {
             $githubUser = Socialite::driver('github')->user();
 
-            $user = Usuario::where('email', $githubUser->getEmail())->first();
+            $user = $this->oAuthUserService->resolveOrCreateUser(
+                'github',
+                (string) $githubUser->getId(),
+                $githubUser->getEmail(),
+                $githubUser->getName() ?? $githubUser->getNickname() ?? 'Usuario',
+            );
 
-            if (!$user) {
-                $user = Usuario::create([
-                    'email'       => $githubUser->getEmail(),
-                    'nombre'      => $githubUser->getName() ?? $githubUser->getNickname() ?? 'Usuario',
-                    'apellido'    => '',
-                    'provider'    => 'github',
-                    'provider_id' => $githubUser->getId(),
-                    'rol'         => 'usuario',
-                    'password'    => bcrypt(Str::random(24)),
-                ]);
-            }
-
-            $token = $user->createToken('auth_token')->plainTextToken;
+            $token = $this->oAuthUserService->issueToken($user);
 
             return view('github-callback', [
                 'token' => $token,
-                'user'  => $user,
+                'user' => $user,
             ]);
-
         } catch (\Exception $e) {
             return view('github-callback', ['error' => $e->getMessage()]);
         }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class FormacionAcademica extends Model
@@ -16,6 +17,16 @@ class FormacionAcademica extends Model
         'fecha_inicio',
         'fecha_fin',
     ];
+
+    protected $casts = [
+        'fecha_inicio' => 'date',
+        'fecha_fin' => 'date',
+    ];
+
+    public function scopeForUser(Builder $query, int $userId): Builder
+    {
+        return $query->where('usuario_id', $userId);
+    }
 
     public function usuario()
     {

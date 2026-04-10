@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\OAuthUserService;
 use Laravel\Socialite\Facades\Socialite;
-use App\Models\Usuario;
-use Illuminate\Support\Str;
 
 class GoogleController extends Controller
 {
+    public function __construct(private readonly OAuthUserService $oAuthUserService) {}
+
     public function redirect()
     {
         return Socialite::driver('google')->redirect();
@@ -19,27 +20,20 @@ class GoogleController extends Controller
         try {
             $googleUser = Socialite::driver('google')->user();
 
-            $user = Usuario::where('email', $googleUser->getEmail())->first();
+            $user = $this->oAuthUserService->resolveOrCreateUser(
+                'google',
+                (string) $googleUser->getId(),
+                $googleUser->getEmail(),
+                $googleUser->user['given_name'] ?? $googleUser->getName() ?? 'Usuario',
+                $googleUser->user['family_name'] ?? '',
+            );
 
-            if (!$user) {
-                $user = Usuario::create([
-                    'email'       => $googleUser->getEmail(),
-                    'nombre'      => $googleUser->user['given_name'] ?? $googleUser->getName() ?? 'Usuario',
-                    'apellido'    => $googleUser->user['family_name'] ?? '',
-                    'provider'    => 'google',
-                    'provider_id' => $googleUser->getId(),
-                    'rol'         => 'usuario',
-                    'password'    => bcrypt(Str::random(24)),
-                ]);
-            }
-
-            $token = $user->createToken('auth_token')->plainTextToken;
+            $token = $this->oAuthUserService->issueToken($user);
 
             return view('google-callback', [
                 'token' => $token,
-                'user'  => $user,
+                'user' => $user,
             ]);
-
         } catch (\Exception $e) {
             return view('google-callback', ['error' => $e->getMessage()]);
         }

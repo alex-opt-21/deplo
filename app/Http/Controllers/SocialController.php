@@ -11,7 +11,7 @@ class SocialController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $socials = Social::where('usuario_id', $request->user()->id)
+        $socials = Social::forUser($request->user()->id)
             ->orderByDesc('id')
             ->get();
 
@@ -35,7 +35,7 @@ class SocialController extends Controller
 
     public function update(SocialRequest $request, int $id): JsonResponse
     {
-        $social = Social::where('usuario_id', $request->user()->id)->findOrFail($id);
+        $social = Social::forUser($request->user()->id)->findOrFail($id);
         $social->update($this->payload($request));
 
         return response()->json($social->fresh());
@@ -43,13 +43,13 @@ class SocialController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $social = Social::where('usuario_id', $request->user()->id)->findOrFail($id);
+        $social = Social::forUser($request->user()->id)->findOrFail($id);
         $social->delete();
 
         return response()->json(['message' => 'Enlace social eliminado correctamente']);
     }
 
-    private function payload(Request $request): array
+    private function payload(SocialRequest $request): array
     {
         $data = $request->validated();
         $cvFile = $request->file('cvFile') ?? $request->file('cv_file');

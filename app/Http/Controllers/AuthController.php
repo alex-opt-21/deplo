@@ -3,23 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UsuarioResource;
 use App\Services\AuthService;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class AuthController extends Controller
 {
     public function __construct(protected AuthService $authService) {}
 
-    public function login(LoginRequest $request)
+    public function login(LoginRequest $request): JsonResponse
     {
         try {
             $result = $this->authService->login($request->validated());
 
             return response()->json([
-                'message' => 'Sesión iniciada correctamente',
-                'user'    => new UsuarioResource($result['user']),
-                'token'   => $result['token'],
+                'message' => 'Sesion iniciada correctamente',
+                'user' => new UsuarioResource($result['user']),
+                'token' => $result['token'],
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -28,17 +29,16 @@ class AuthController extends Controller
         }
     }
 
-    public function register(Request $request)
+    public function register(RegisterRequest $request): JsonResponse
     {
         try {
-            $result = $this->authService->register($request->all());
+            $result = $this->authService->register($request->validated());
 
             return response()->json([
                 'message' => 'Usuario registrado correctamente',
-                'user'    => new UsuarioResource($result['user']),
-                'token'   => $result['token'],
+                'user' => new UsuarioResource($result['user']),
+                'token' => $result['token'],
             ], 201);
-
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
@@ -46,4 +46,3 @@ class AuthController extends Controller
         }
     }
 }
-

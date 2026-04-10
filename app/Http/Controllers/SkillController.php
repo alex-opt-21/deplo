@@ -11,7 +11,7 @@ class SkillController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $skills = Habilidad::where('usuario_id', $request->user()->id)
+        $skills = Habilidad::forUser($request->user()->id)
             ->orderByDesc('id')
             ->get();
 
@@ -30,7 +30,7 @@ class SkillController extends Controller
 
     public function update(SkillRequest $request, int $id): JsonResponse
     {
-        $skill = Habilidad::where('usuario_id', $request->user()->id)->findOrFail($id);
+        $skill = Habilidad::forUser($request->user()->id)->findOrFail($id);
         $skill->update($request->validated());
 
         return response()->json($skill);
@@ -38,7 +38,7 @@ class SkillController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $skill = Habilidad::where('usuario_id', $request->user()->id)->findOrFail($id);
+        $skill = Habilidad::forUser($request->user()->id)->findOrFail($id);
         $skill->delete();
 
         return response()->json(['message' => 'Habilidad eliminada correctamente']);

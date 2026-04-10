@@ -1,5 +1,8 @@
 <?php
+
 namespace App\Models;
+
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Habilidad extends Model
@@ -15,8 +18,13 @@ class Habilidad extends Model
         'nivel_cuantitativo',
         'nivel_cualitativo',
         'descripcion',
-        'categoría'
+        'categorÃ­a',
     ];
+
+    public function scopeForUser(Builder $query, int $userId): Builder
+    {
+        return $query->where('usuario_id', $userId);
+    }
 
     public function usuario()
     {

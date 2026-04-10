@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
-use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
 
 class ResetPasswordNotification extends Notification
 {
@@ -16,13 +16,14 @@ class ResetPasswordNotification extends Notification
 
     public function toMail($notifiable): MailMessage
     {
-        $url = "http://localhost:5173/reset-password?token={$this->token}&email={$notifiable->email}";
+        $url = rtrim((string) config('app.frontend_url'), '/')
+            ."/reset-password?token={$this->token}&email={$notifiable->email}";
 
         return (new MailMessage)
-            ->subject('Restablecer contraseña - Arcane Systems')
-            ->greeting('Hola ' . $notifiable->nombre . ',')
-            ->line('Recibimos una solicitud para restablecer tu contraseña.')
-            ->action('Restablecer contraseña', $url)
+            ->subject('Restablecer contrasena - Arcane Systems')
+            ->greeting('Hola '.$notifiable->nombre.',')
+            ->line('Recibimos una solicitud para restablecer tu contrasena.')
+            ->action('Restablecer contrasena', $url)
             ->line('Este enlace expira en 60 minutos.')
             ->line('Si no solicitaste esto, ignora este correo.');
     }

@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\OAuthUserService;
 use Laravel\Socialite\Facades\Socialite;
-use App\Models\Usuario;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 
 class LinkedInController extends Controller
 {
+    public function __construct(private readonly OAuthUserService $oAuthUserService) {}
+
     public function redirect()
     {
         return Socialite::driver('linkedin-openid')->redirect();
@@ -20,29 +20,20 @@ class LinkedInController extends Controller
         try {
             $linkedinUser = Socialite::driver('linkedin-openid')->user();
 
-            $user = Usuario::where('email', $linkedinUser->getEmail())->first();
+            $user = $this->oAuthUserService->resolveOrCreateUser(
+                'linkedin',
+                (string) $linkedinUser->getId(),
+                $linkedinUser->getEmail(),
+                $linkedinUser->user['given_name'] ?? $linkedinUser->getName() ?? 'Usuario',
+                $linkedinUser->user['family_name'] ?? '',
+            );
 
-            if (!$user) {
-                $user = Usuario::create([
-                    'email'       => $linkedinUser->getEmail(),
-                    'nombre'  => $linkedinUser->user['given_name'] ?? $linkedinUser->getName() ?? 'Usuario',
-                    'apellido' => $linkedinUser->user['family_name'] ?? '',
-                    'provider'    => 'linkedin',
-                    'provider_id' => $linkedinUser->getId(),
-                    'rol'         => 'usuario',
-                    'password'    => bcrypt(Str::random(24)),
-                ]);
-            }
+            $token = $this->oAuthUserService->issueToken($user);
 
-            // Si ya existe, no toca nada — solo loguea con los datos actuales de la BD
-            $token = $user->createToken('auth_token')->plainTextToken;
-
-            // Cierra el popup y manda los datos al frontend
             return view('linkedin-callback', [
                 'token' => $token,
-                'user'  => $user,
+                'user' => $user,
             ]);
-
         } catch (\Exception $e) {
             return view('linkedin-callback', ['error' => $e->getMessage()]);
         }
