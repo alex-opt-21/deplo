@@ -47,5 +47,6 @@ return [
     ],
     'recaptcha' => [
         'secret_key' => env('RECAPTCHA_SECRET_KEY'),
+        'verify' => env('RECAPTCHA_VERIFY', env('APP_ENV') !== 'local'),
     ],
 ];

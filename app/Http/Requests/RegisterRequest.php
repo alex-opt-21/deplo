@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rules\Password;
 
 class RegisterRequest extends FormRequest
@@ -23,12 +24,46 @@ class RegisterRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        $rules = [
             'nombre' => ['required', 'string', 'min:2', 'max:255'],
             'apellido' => ['required', 'string', 'min:2', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:usuarios,email'],
             'password' => ['required', 'confirmed', Password::min(8)],
         ];
+
+        $recaptchaSecret = (string) config('services.recaptcha.secret_key', '');
+        $shouldVerifyRecaptcha = (bool) config('services.recaptcha.verify', ! app()->isLocal());
+
+        if ($recaptchaSecret !== '') {
+            $rules['captcha_token'] = [
+                'required',
+                'string',
+                function (string $attribute, mixed $value, \Closure $fail) use ($recaptchaSecret, $shouldVerifyRecaptcha) {
+                    if (! $shouldVerifyRecaptcha) {
+                        return;
+                    }
+
+                    try {
+                        $response = Http::asForm()->timeout(10)->post(
+                            'https://www.google.com/recaptcha/api/siteverify',
+                            [
+                                'secret' => $recaptchaSecret,
+                                'response' => $value,
+                                'remoteip' => request()->ip(),
+                            ]
+                        );
+
+                        if (! $response->successful() || ! data_get($response->json(), 'success')) {
+                            $fail('El captcha no es valido.');
+                        }
+                    } catch (\Throwable) {
+                        $fail('No se pudo validar el captcha.');
+                    }
+                },
+            ];
+        }
+
+        return $rules;
     }
 
     public function messages(): array
@@ -41,6 +76,7 @@ class RegisterRequest extends FormRequest
             'email.unique' => 'Ya existe una cuenta registrada con este correo.',
             'password.required' => 'La contrasena es obligatoria.',
             'password.confirmed' => 'La confirmacion de la contrasena no coincide.',
+            'captcha_token.required' => 'Debes completar el captcha.',
         ];
     }
 

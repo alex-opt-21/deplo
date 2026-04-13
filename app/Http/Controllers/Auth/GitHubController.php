@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Services\OAuthUserService;
+use GuzzleHttp\Client;
 use Laravel\Socialite\Facades\Socialite;
 
 class GitHubController extends Controller
@@ -13,6 +14,7 @@ class GitHubController extends Controller
     public function redirect()
     {
         return Socialite::driver('github')
+            ->setHttpClient(new Client(['verify' => ! app()->isLocal()]))
             ->stateless()
             ->scopes(['read:user', 'user:email'])
             ->redirect();
@@ -22,6 +24,7 @@ class GitHubController extends Controller
     {
         try {
             $githubUser = Socialite::driver('github')
+                ->setHttpClient(new Client(['verify' => ! app()->isLocal()]))
                 ->stateless()
                 ->user();
 

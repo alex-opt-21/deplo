@@ -9,11 +9,18 @@
 <script>
   const payload = @json($payload);
   const frontendUrl = String(@json(config('app.frontend_url')) || "").replace(/\/+$/, "");
+  const frontendOrigin = frontendUrl || "";
   const callbackUrl = frontendUrl
     ? `${frontendUrl}/auth/popup-callback#payload=${encodeURIComponent(JSON.stringify(payload))}`
     : "";
 
   try {
+    if (window.opener && frontendOrigin) {
+      try {
+        window.opener.postMessage(payload, frontendOrigin);
+      } catch {}
+    }
+
     if (callbackUrl) {
       window.location.replace(callbackUrl);
     }

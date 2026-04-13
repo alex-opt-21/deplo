@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Services\OAuthUserService;
+use GuzzleHttp\Client;
 use Laravel\Socialite\Facades\Socialite;
 
 class GoogleController extends Controller
@@ -13,6 +14,7 @@ class GoogleController extends Controller
     public function redirect()
     {
         return Socialite::driver('google')
+            ->setHttpClient(new Client(['verify' => ! app()->isLocal()]))
             ->stateless()
             ->scopes(['openid', 'profile', 'email'])
             ->redirect();
@@ -22,6 +24,7 @@ class GoogleController extends Controller
     {
         try {
             $googleUser = Socialite::driver('google')
+                ->setHttpClient(new Client(['verify' => ! app()->isLocal()]))
                 ->stateless()
                 ->user();
 
