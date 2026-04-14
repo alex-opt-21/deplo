@@ -28,7 +28,7 @@ class SocialController extends Controller
         $data = $this->payload($request);
         $user = $request->user();
 
-        if (array_key_exists('cv_url', $data)) {
+        if ($this->shouldPersistCvUrl($data)) {
             $this->persistCvUrl($user, $data['cv_url']);
         }
 
@@ -52,7 +52,7 @@ class SocialController extends Controller
         $social = Social::forUser($request->user()->id)->findOrFail($id);
         $data = $this->payload($request);
 
-        if (array_key_exists('cv_url', $data)) {
+        if ($this->shouldPersistCvUrl($data)) {
             $this->persistCvUrl($request->user(), $data['cv_url']);
         }
 
@@ -78,7 +78,16 @@ class SocialController extends Controller
             $data['cv_url'] = $cvFile->store('cv', 'public');
         }
 
+        if (array_key_exists('cv_url', $data) && blank($data['cv_url'])) {
+            unset($data['cv_url']);
+        }
+
         return $data;
+    }
+
+    private function shouldPersistCvUrl(array $data): bool
+    {
+        return array_key_exists('cv_url', $data) && filled($data['cv_url']);
     }
 
     private function persistCvUrl(Usuario $user, string $path): void
