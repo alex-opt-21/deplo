@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileRequest;
+use App\Http\Requests\SearchFiltersRequest;
+use App\Models\Usuario;
 use App\Services\ProfileSearchService;
 use App\Services\ProfileService;
 use Illuminate\Http\JsonResponse;
@@ -42,6 +44,11 @@ class ProfileController extends Controller
     public function overview(Request $request): JsonResponse
     {
         return response()->json($this->profileService->overview($request->user()));
+    }
+
+    public function publicOverview(Usuario $usuario): JsonResponse
+    {
+        return response()->json($this->profileService->overview($usuario));
     }
 
     public function completar(ProfileRequest $request): JsonResponse
@@ -104,6 +111,20 @@ class ProfileController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error en busqueda',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function searchWithFilters(SearchFiltersRequest $request): JsonResponse
+    {
+        try {
+            return response()->json(
+                $this->profileSearchService->searchWithFilters($request->validated())
+            );
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error en busqueda por filtros',
                 'error' => $e->getMessage(),
             ], 500);
         }

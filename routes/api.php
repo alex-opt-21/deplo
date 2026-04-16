@@ -15,6 +15,8 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
 Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
 Route::get('/user/search', [ProfileController::class, 'search']);
+Route::post('/user/search/filters', [ProfileController::class, 'searchWithFilters']);
+Route::get('/perfil/public/{usuario}/overview', [ProfileController::class, 'publicOverview']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/formacion', [FormacionAcademicaController::class, 'store']);
     Route::get('/formacion', [FormacionAcademicaController::class, 'index']);
