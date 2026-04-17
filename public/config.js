@@ -1,4 +1,4 @@
-const DEFAULT_API_URL = "https://portafy.onrender.com/api";
+const DEFAULT_API_URL = "https://deplo-0vba.onrender.com/api";
 
 function normalizeUrl(url, fallback) {
   const value = String(url || fallback || "").trim();
